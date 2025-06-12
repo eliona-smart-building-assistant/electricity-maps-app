@@ -16,8 +16,8 @@
 package apiservices
 
 import (
-	apiserver "app-name/api/generated"
 	"context"
+	apiserver "electricity-maps/api/generated"
 	"encoding/json"
 	"fmt"
 	"io"

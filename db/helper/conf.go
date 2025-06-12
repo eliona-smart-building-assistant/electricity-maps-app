@@ -16,7 +16,7 @@
 package dbhelper
 
 import (
-	appmodel "app-name/app/model"
+	appmodel "electricity-maps/app/model"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -27,8 +27,8 @@ import (
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 	"github.com/lib/pq"
 
-	"app-name/db/generated/postgres/app_schema_name/model"
-	. "app-name/db/generated/postgres/app_schema_name/table"
+	"electricity-maps/db/generated/postgres/electricity_maps/model"
+	. "electricity-maps/db/generated/postgres/electricity_maps/table"
 
 	. "github.com/go-jet/jet/v2/postgres"
 	"github.com/go-jet/jet/v2/qrm"

@@ -16,9 +16,9 @@
 package eliona
 
 import (
-	appmodel "app-name/app/model"
-	conf "app-name/db/helper"
 	"context"
+	appmodel "electricity-maps/app/model"
+	conf "electricity-maps/db/helper"
 	"fmt"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/utils"
@@ -59,7 +59,7 @@ func (d *ExampleDevice) GetDescription() string {
 }
 
 func (d *ExampleDevice) GetAssetType() string {
-	return "app_schema_name_device"
+	return "electricity_maps_device"
 }
 
 func (d *ExampleDevice) GetGAI() string {
@@ -96,15 +96,15 @@ type Root struct {
 }
 
 func (r *Root) GetName() string {
-	return "app_schema_name"
+	return "electricity_maps"
 }
 
 func (r *Root) GetDescription() string {
-	return "Root asset for App Name devices"
+	return "Root asset for Electricity Maps devices"
 }
 
 func (r *Root) GetAssetType() string {
-	return "app_schema_name_root"
+	return "electricity_maps_root"
 }
 
 func (r *Root) GetGAI() string {

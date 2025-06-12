@@ -16,11 +16,11 @@
 package apiservices
 
 import (
-	apiserver "app-name/api/generated"
-	appmodel "app-name/app/model"
-	"app-name/broker"
-	dbhelper "app-name/db/helper"
 	"context"
+	apiserver "electricity-maps/api/generated"
+	appmodel "electricity-maps/app/model"
+	"electricity-maps/broker"
+	dbhelper "electricity-maps/db/helper"
 	"errors"
 	"fmt"
 	"net/http"

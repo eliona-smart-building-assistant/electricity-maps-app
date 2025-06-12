@@ -1,4 +1,4 @@
-module app-name
+module electricity-maps
 
 go 1.24
 

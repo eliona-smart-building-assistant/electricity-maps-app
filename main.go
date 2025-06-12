@@ -16,8 +16,8 @@
 package main
 
 import (
-	"app-name/app"
-	dbhelper "app-name/db/helper"
+	"electricity-maps/app"
+	dbhelper "electricity-maps/db/helper"
 	"time"
 
 	elionaapp "github.com/eliona-smart-building-assistant/go-eliona/app"

@@ -11,7 +11,7 @@ import (
 	"github.com/go-jet/jet/v2/postgres"
 )
 
-var Configuration = newConfigurationTable("app_schema_name", "configuration", "")
+var Configuration = newConfigurationTable("electricity_maps", "configuration", "")
 
 type configurationTable struct {
 	postgres.Table

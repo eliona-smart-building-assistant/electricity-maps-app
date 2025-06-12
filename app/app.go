@@ -16,12 +16,12 @@
 package app
 
 import (
-	apiserver "app-name/api/generated"
-	apiservices "app-name/api/services"
-	appmodel "app-name/app/model"
-	dbhelper "app-name/db/helper"
-	"app-name/eliona"
 	"context"
+	apiserver "electricity-maps/api/generated"
+	apiservices "electricity-maps/api/services"
+	appmodel "electricity-maps/app/model"
+	dbhelper "electricity-maps/db/helper"
+	"electricity-maps/eliona"
 	"errors"
 	"net/http"
 	"reflect"

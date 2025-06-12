@@ -1,14 +1,6 @@
-<mark>
-Replace the following strings globally with the real app name:
-</mark>
+# Eliona App for Electricity Maps
 
-- `app-name` with app's repo name. Use `-` if the app name contains spaces or other separators (such as dots). All letters are lower-cased. For names containing dots, adapt the documentation links.
-- `app_schema_name` and `app\\_schema\\_name` with app's db schema name. Use `_` if the app name contains spaces. All letters are lower-cased.
-- `App Name` with app's real name. Letters can be mixed-cased, depends on using e.g. brand names.
-
-# Eliona App for App Name
-
-The App Name app is used to access App Name.
+The Electricity Maps app provides Eliona with data about current carbon intensity and electricity sources at a specific location. Data comes from [Electricity Maps service](electricitymaps.com).
 
 ## Configuration
 
@@ -24,8 +16,6 @@ This initialization can be handled by the `reset.sql` script.
 
 ### Environment variables
 
-<mark>Todo: Describe further environment variables tables the app needs for configuration</mark>
-
 - `CONNECTION_STRING`: configures the [Eliona database](https://github.com/eliona-smart-building-assistant/go-eliona/tree/main/db). Otherwise, the app can't be initialized and started (e.g. `postgres://user:pass@localhost:5432/iot`).
 
 - `INIT_CONNECTION_STRING`: configures the [Eliona database](https://github.com/eliona-smart-building-assistant/go-eliona/tree/main/db) for app initialization like creating schema and tables (e.g. `postgres://user:pass@localhost:5432/iot`). Default is content of `CONNECTION_STRING`.
@@ -40,13 +30,11 @@ This initialization can be handled by the `reset.sql` script.
 
 ### Database tables ###
 
-<mark>Todo: Describe other tables if the app needs them.</mark>
+The app requires configuration data that remains in the database. To do this, the app creates its own database schema `electricity_maps` during initialization. To modify and handle the configuration data the app provides an API access. Have a look at the [API specification](https://eliona-smart-building-assistant.github.io/open-api-docs/?https://raw.githubusercontent.com/eliona-smart-building-assistant/electricity-maps-app/develop/openapi.yaml) how the configuration tables should be used.
 
-The app requires configuration data that remains in the database. To do this, the app creates its own database schema `app_schema_name` during initialization. To modify and handle the configuration data the app provides an API access. Have a look at the [API specification](https://eliona-smart-building-assistant.github.io/open-api-docs/?https://raw.githubusercontent.com/eliona-smart-building-assistant/app-name-app/develop/openapi.yaml) how the configuration tables should be used.
+- `electricity_maps.configuration`: Contains configuration of the app. Editable through the API.
 
-- `app_schema_name.configuration`: Contains configuration of the app. Editable through the API.
-
-- `app_schema_name.asset`: Provides asset mapping. Maps broker's asset IDs to Eliona asset IDs.
+- `electricity_maps.asset`: Provides asset mapping. Maps broker's asset IDs to Eliona asset IDs.
 
 **Generation**: to generate access method to database see Generation section below.
 
@@ -57,7 +45,7 @@ The app requires configuration data that remains in the database. To do this, th
 
 The app provides its own API to access configuration data and other functions. The full description of the API is defined in the `openapi.yaml` OpenAPI definition file.
 
-- [API Reference](https://eliona-smart-building-assistant.github.io/open-api-docs/?https://raw.githubusercontent.com/eliona-smart-building-assistant/app-name-app/develop/openapi.yaml) shows details of the API
+- [API Reference](https://eliona-smart-building-assistant.github.io/open-api-docs/?https://raw.githubusercontent.com/eliona-smart-building-assistant/electricity-maps-app/develop/openapi.yaml) shows details of the API
 
 **Generation**: to generate api server stub see Generation section below.
 
@@ -75,7 +63,7 @@ The data is written for each device, structured into different subtypes of Elion
 
 ### Continuous asset creation ###
 
-Assets for all devices connected to the App Name account are created automatically when the configuration is added.
+Assets for all devices connected to the Electricity Maps account are created automatically when the configuration is added.
 
 To select which assets to create, a filter could be specified in config. The schema of the filter is defined in the `openapi.yaml` file.
 

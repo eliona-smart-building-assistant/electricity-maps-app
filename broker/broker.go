@@ -16,7 +16,7 @@
 package broker
 
 import (
-	appmodel "app-name/app/model"
+	appmodel "electricity-maps/app/model"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 )

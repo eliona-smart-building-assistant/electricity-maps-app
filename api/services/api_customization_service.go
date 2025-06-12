@@ -16,8 +16,8 @@
 package apiservices
 
 import (
-	apiserver "app-name/api/generated"
 	"context"
+	apiserver "electricity-maps/api/generated"
 	"net/http"
 )
 
@@ -34,7 +34,7 @@ func NewCustomizationAPIService() apiserver.CustomizationAPIServicer {
 
 // GetDashboardTemplateByName - Get a full dashboard template
 func (s *CustomizationAPIService) GetDashboardTemplateByName(ctx context.Context, dashboardTemplateName string, projectId string) (apiserver.ImplResponse, error) {
-	if dashboardTemplateName == "App Name" {
+	if dashboardTemplateName == "Electricity Maps" {
 		return apiserver.ImplResponse{Code: http.StatusNotImplemented}, nil
 	} else {
 		return apiserver.ImplResponse{Code: http.StatusNotFound}, nil
