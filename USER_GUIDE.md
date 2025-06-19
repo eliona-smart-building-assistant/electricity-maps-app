@@ -18,30 +18,27 @@ The Electricity Maps app requires configuration through Eliona’s settings inte
 
 ### Registering the app in Electricity Maps Service
 
-Create credentials in Electricity Maps Service to connect the Electricity Maps services from Eliona. All required credentials are listed below in the [configuration section](#configure-the-electricity-maps-app).
-
-<mark>TODO: Describe the steps where you can get or create the necessary credentials.</mark>
+Create credentials in [Electricity Maps Portal](https://portal.electricitymaps.com). You will need to choose subscription based on your requirements and configure the app with the API key obtained here (instructions below).
 
 ### Configure the Electricity Maps app
 
 Configurations can be created in Eliona under `Settings > Apps > Electricity Maps` which opens the app's [Generic Frontend](https://doc.eliona.io/collection/v/eliona-english/manuals/settings/apps). Here you can use the appropriate endpoint with the POST method. Each configuration requires the following data:
 
-| Attribute         | Description                                                                     |
-|-------------------|---------------------------------------------------------------------------------|
-| `baseURL`         | URL of the Electricity Maps services.                                                   |
-| `clientSecrets`   | Client secrets obtained from the Electricity Maps service.                              |
-| `assetFilter`     | Filtering asset during [Continuous Asset Creation](#continuous-asset-creation). |
-| `enable`          | Flag to enable or disable this configuration.                                   |
-| `refreshInterval` | Interval in seconds for data synchronization.                                   |
-| `requestTimeout`  | API query timeout in seconds.                                                   |
-| `projectIDs`      | List of Eliona project IDs for data collection.                                 |
+| Attribute         | Description                                                                        |
+|-------------------|------------------------------------------------------------------------------------|
+| `baseURL`         | URL of the Electricity Maps services.                                              |
+| `apiKey`          | API key obtained at [Electricity maps portal](https://portal.electricitymaps.com.) |
+| `enable`          | Flag to enable or disable this configuration.                                      |
+| `refreshInterval` | Interval in seconds for data synchronization.                                      |
+| `requestTimeout`  | API query timeout in seconds.                                                      |
+| `projectIDs`      | List of Eliona project IDs for data collection.                                    |
 
 Example configuration JSON:
 
 ```json
 {
   "baseURL": "http://service/v1",
-  "clientSecrets": "random-cl13nt-s3cr3t",
+  "apiKey": "random-cl13nt-s3cr3t",
   "filter": "",
   "enable": true,
   "refreshInterval": 60,
