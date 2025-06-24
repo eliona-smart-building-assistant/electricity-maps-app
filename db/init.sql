@@ -18,7 +18,7 @@ create schema if not exists electricity_maps;
 -- Should be editable by eliona frontend.
 create table if not exists electricity_maps.configuration
 (
-	id                   bigserial primary key,
+	id                   int primary key default 1 check (id = 1), -- only single configuration possible, due to assets not created by app
 	api_key              text not null,
 	refresh_interval     integer not null default 60,
 	request_timeout      integer not null default 120,
@@ -30,13 +30,21 @@ create table if not exists electricity_maps.configuration
 
 create table if not exists electricity_maps.asset
 (
-	id               bigserial primary key,
-	configuration_id bigserial not null references electricity_maps.configuration(id) ON DELETE CASCADE,
+	id               bigserial        primary key,
+	project_id       text             not null,
+	location_name    text             not null,
+	lat              double precision not null,
+	lon              double precision not null,
+	asset_id         integer          not null unique
+);
+
+create table if not exists electricity_maps.root_asset
+(
+	id               int primary key,
+	configuration_id int not null unique references electricity_maps.configuration(id) ON DELETE CASCADE,
 	project_id       text      not null,
-	global_asset_id  text      not null,
-	provider_id      text      not null unique,
-	is_root          boolean   not null default false,
-	asset_id         integer
+	gai              text      not null,
+	asset_id         integer   not null unique
 );
 
 -- There is a transaction started in app.Init(). We need to commit to make the

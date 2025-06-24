@@ -16,10 +16,9 @@
 package dbhelper
 
 import (
-	appmodel "electricity-maps/app/model"
 	"context"
 	"database/sql"
-	"encoding/json"
+	appmodel "electricity-maps/app/model"
 	"errors"
 	"fmt"
 
@@ -70,16 +69,10 @@ var ErrBadRequest = errors.New("bad request")
 var ErrNotFound = errors.New("not found")
 
 func UpsertConfig(ctx context.Context, config appmodel.Configuration) (appmodel.Configuration, error) {
-	af, err := json.Marshal(config.AssetFilter)
-	if err != nil {
-		return appmodel.Configuration{}, fmt.Errorf("marshalling asset filter: %w", err)
-	}
-
 	commonColumns := ColumnList{
-		Configuration.APIAccessChangeMe,
+		Configuration.APIKey,
 		Configuration.RefreshInterval,
 		Configuration.RequestTimeout,
-		Configuration.AssetFilter,
 		Configuration.Active,
 		Configuration.Enable,
 		Configuration.ProjectIds,
@@ -87,10 +80,9 @@ func UpsertConfig(ctx context.Context, config appmodel.Configuration) (appmodel.
 	}
 
 	commonValues := []interface{}{
-		config.ApiAccessChangeMe,
+		config.ApiKey,
 		config.RefreshInterval,
 		config.RequestTimeout,
-		Json(af),
 		config.Active,
 		config.Enable,
 		pq.StringArray(config.ProjectIDs),
@@ -108,10 +100,9 @@ func UpsertConfig(ctx context.Context, config appmodel.Configuration) (appmodel.
 			Configuration.ID,
 		).DO_UPDATE(
 			SET(
-				Configuration.APIAccessChangeMe.SET(Configuration.EXCLUDED.APIAccessChangeMe),
+				Configuration.APIKey.SET(Configuration.EXCLUDED.APIKey),
 				Configuration.RefreshInterval.SET(Configuration.EXCLUDED.RefreshInterval),
 				Configuration.RequestTimeout.SET(Configuration.EXCLUDED.RequestTimeout),
-				Configuration.AssetFilter.SET(Configuration.EXCLUDED.AssetFilter),
 				Configuration.Active.SET(Configuration.EXCLUDED.Active),
 				Configuration.Enable.SET(Configuration.EXCLUDED.Enable),
 				Configuration.ProjectIds.SET(Configuration.EXCLUDED.ProjectIds),
@@ -126,17 +117,16 @@ func UpsertConfig(ctx context.Context, config appmodel.Configuration) (appmodel.
 
 	var updatedConfig model.Configuration
 	if err := stmt.QueryContext(ctx, GetDB().db, &updatedConfig); err != nil {
-		return appmodel.Configuration{}, err
+		return appmodel.Configuration{}, fmt.Errorf("upserting config: %v", err)
 	}
 
 	return toAppConfig(updatedConfig)
 }
 
-func GetConfig(ctx context.Context, id int64) (appmodel.Configuration, error) {
+func GetConfig(ctx context.Context) (appmodel.Configuration, error) {
 	var dbConfig model.Configuration
 	err := Configuration.
 		SELECT(Configuration.AllColumns).
-		WHERE(Configuration.ID.EQ(Int(id))).
 		QueryContext(ctx, GetDB().db, &dbConfig)
 	if errors.Is(err, qrm.ErrNoRows) {
 		return appmodel.Configuration{}, ErrNotFound
@@ -147,95 +137,58 @@ func GetConfig(ctx context.Context, id int64) (appmodel.Configuration, error) {
 	return toAppConfig(dbConfig)
 }
 
-func DeleteConfig(ctx context.Context, id int64) error {
-	stmt := Configuration.DELETE().
-		WHERE(Configuration.ID.EQ(Int(id)))
-	r, err := stmt.ExecContext(ctx, GetDB().db)
-	if err != nil {
-		return err
-	}
-	rows, _ := r.RowsAffected()
-	if rows == 0 {
-		return ErrNotFound
-	}
-	if rows > 1 {
-		return fmt.Errorf("unexpected deletion: deleted %d rows", rows)
-	}
-	return nil
-}
-
-func GetConfigs(ctx context.Context) ([]appmodel.Configuration, error) {
-	var dbConfigs []model.Configuration
-	stmt := Configuration.SELECT(Configuration.AllColumns)
-
-	err := stmt.QueryContext(ctx, GetDB().db, &dbConfigs)
-	if err != nil {
-		return nil, err
-	}
-
-	configs := make([]appmodel.Configuration, len(dbConfigs))
-	for i, dbCfg := range dbConfigs {
-		configs[i], err = toAppConfig(dbCfg)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return configs, nil
-}
-
-func SetConfigActiveState(ctx context.Context, id int64, state bool) error {
+func SetConfigActiveState(ctx context.Context, state bool) error {
 	stmt := Configuration.UPDATE(Configuration.Active).
-		SET(state).
-		WHERE(Configuration.ID.EQ(Int(id)))
-
+		SET(state)
 	_, err := stmt.ExecContext(ctx, GetDB().db)
 	return err
-}
-
-func InsertAssetWithDetails(ctx context.Context, config appmodel.Configuration, projectID string, globalAssetID string, assetID int32, providerID string, isRoot bool) error {
-	asset := appmodel.Asset{
-		Config:        config,
-		ProjectID:     projectID,
-		GlobalAssetID: globalAssetID,
-		ProviderID:    providerID,
-		IsRoot:        isRoot,
-		AssetID:       assetID,
-	}
-
-	return InsertAsset(ctx, asset)
 }
 
 func InsertAsset(ctx context.Context, asset appmodel.Asset) error {
 	stmt := Asset.INSERT(
-		Asset.ConfigurationID,
 		Asset.ProjectID,
-		Asset.GlobalAssetID,
-		Asset.ProviderID,
 		Asset.AssetID,
-		Asset.IsRoot,
+		Asset.LocationName,
+		Asset.Lat,
+		Asset.Lon,
 	).VALUES(
-		asset.Config.Id,
 		asset.ProjectID,
-		asset.GlobalAssetID,
-		asset.ProviderID,
 		asset.AssetID,
-		asset.IsRoot,
-	)
+		asset.LocationName,
+		asset.Lat,
+		asset.Lon,
+	).ON_CONFLICT(
+		Asset.AssetID,
+	).DO_NOTHING()
 
 	_, err := stmt.ExecContext(ctx, GetDB().db)
 	return err
 }
 
-func GetAssetId(ctx context.Context, config appmodel.Configuration, projectID, gai string) (*int32, error) {
+func UpdateAssetLocation(ctx context.Context, asset appmodel.Asset) error {
+	stmt := Asset.UPDATE(
+		Asset.LocationName,
+		Asset.Lat,
+		Asset.Lon,
+	).SET(
+		asset.LocationName,
+		asset.Lat,
+		asset.Lon,
+	).WHERE(
+		Asset.ID.EQ(Int(asset.ID)),
+	)
+	_, err := stmt.ExecContext(ctx, GetDB().db)
+	return err
+}
+
+func GetAssetId(ctx context.Context, config appmodel.Configuration, projectID, assetID int32) (*int32, error) {
 	var dest struct {
 		ID int32
 	}
 	stmt := Asset.SELECT(
 		Asset.ID,
 	).WHERE(
-		Asset.ConfigurationID.EQ(Int(config.Id)).AND(
-			Asset.ProjectID.EQ(String(projectID))).AND(
-			Asset.GlobalAssetID.EQ(String(gai))),
+		Asset.AssetID.EQ(Int(int64(assetID))),
 	)
 	err := stmt.QueryContext(ctx, GetDB().db, &dest)
 	if errors.Is(err, qrm.ErrNoRows) {
@@ -247,19 +200,14 @@ func GetAssetId(ctx context.Context, config appmodel.Configuration, projectID, g
 	return &dest.ID, nil
 }
 
-type assetWithConfig struct {
-	model.Asset
-	model.Configuration
-}
-
 func GetAssetById(assetId int32) (appmodel.Asset, error) {
-	var asset assetWithConfig
+	var asset model.Asset
 	err := SELECT(
-		Asset.AllColumns, Configuration.AllColumns,
+		Asset.AllColumns,
 	).FROM(
-		Asset.INNER_JOIN(Configuration, Configuration.ID.EQ(Asset.ConfigurationID)),
+		Asset,
 	).WHERE(
-		Asset.ID.EQ(Int32(assetId)),
+		Asset.AssetID.EQ(Int32(assetId)),
 	).Query(GetDB().db, &asset)
 	if errors.Is(err, qrm.ErrNoRows) {
 		return appmodel.Asset{}, ErrNotFound
@@ -267,69 +215,128 @@ func GetAssetById(assetId int32) (appmodel.Asset, error) {
 		return appmodel.Asset{}, fmt.Errorf("fetching asset %v: %v", assetId, err)
 	}
 
-	config, err := toAppConfig(asset.Configuration)
-	if err != nil {
-		return appmodel.Asset{}, fmt.Errorf("translating configuration: %v", err)
+	return toAppAsset(asset), nil
+}
+
+func GetAssets(ctx context.Context) ([]appmodel.Asset, error) {
+	var assets []model.Asset
+	err := SELECT(
+		Asset.AllColumns,
+	).FROM(
+		Asset,
+	).QueryContext(ctx, GetDB().db, &assets)
+	if errors.Is(err, qrm.ErrNoRows) {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("fetching assets: %v", err)
 	}
 
-	return toAppAsset(asset.Asset, config), nil
+	var appAssets []appmodel.Asset
+	for _, a := range assets {
+		appAssets = append(appAssets, toAppAsset(a))
+	}
+	return appAssets, nil
+
 }
 
 func toAppConfig(dbCfg model.Configuration) (appmodel.Configuration, error) {
-	var assetFilter [][]appmodel.FilterRule
-	err := json.Unmarshal([]byte(dbCfg.AssetFilter), &assetFilter)
-	if err != nil {
-		return appmodel.Configuration{}, err
-	}
-
 	return appmodel.Configuration{
-		Id:                dbCfg.ID,
-		ApiAccessChangeMe: dbCfg.APIAccessChangeMe,
-		RefreshInterval:   dbCfg.RefreshInterval,
-		RequestTimeout:    dbCfg.RequestTimeout,
-		AssetFilter:       assetFilter,
-		Active:            dbCfg.Active,
-		Enable:            dbCfg.Enable,
-		ProjectIDs:        dbCfg.ProjectIds,
-		UserId:            dbCfg.UserID,
+		Id:              1,
+		ApiKey:          dbCfg.APIKey,
+		RefreshInterval: dbCfg.RefreshInterval,
+		RequestTimeout:  dbCfg.RequestTimeout,
+		Active:          dbCfg.Active,
+		Enable:          dbCfg.Enable,
+		ProjectIDs:      dbCfg.ProjectIds,
+		UserId:          dbCfg.UserID,
 	}, nil
 }
 
-func toAppAsset(dbAsset model.Asset, config appmodel.Configuration) appmodel.Asset {
-	a := appmodel.Asset{
-		ID:            dbAsset.ID,
-		Config:        config,
-		ProjectID:     dbAsset.ProjectID,
-		GlobalAssetID: dbAsset.GlobalAssetID,
-		ProviderID:    dbAsset.ProviderID,
-		IsRoot:        dbAsset.IsRoot,
+func toAppAsset(dbAsset model.Asset) appmodel.Asset {
+	return appmodel.Asset{
+		ID:           dbAsset.ID,
+		ProjectID:    dbAsset.ProjectID,
+		LocationName: dbAsset.LocationName,
+		Lat:          dbAsset.Lat,
+		Lon:          dbAsset.Lon,
+		AssetID:      dbAsset.AssetID,
 	}
-	if dbAsset.AssetID != nil {
-		a.AssetID = *dbAsset.AssetID
-	}
-	return a
 }
 
-func GetRootAssets() ([]appmodel.Asset, error) {
-	var assets []assetWithConfig
+func UpsertRootAsset(assetID int32, projectID, gai string) error {
+	stmt := RootAsset.INSERT(
+		RootAsset.ConfigurationID,
+		RootAsset.Gai,
+		RootAsset.ProjectID,
+		RootAsset.AssetID,
+	).VALUES(
+		1,
+		gai,
+		projectID,
+		assetID,
+	).ON_CONFLICT(
+		RootAsset.AssetID,
+	).DO_NOTHING()
+
+	_, err := stmt.ExecContext(context.Background(), GetDB().db)
+	return err
+}
+
+func GetRootAssets() ([]appmodel.RootAsset, error) {
+	var assets []model.Asset
 	err := SELECT(
-		Asset.AllColumns, Configuration.AllColumns,
+		RootAsset.AllColumns,
 	).FROM(
-		Asset.INNER_JOIN(Configuration, Configuration.ID.EQ(Asset.ConfigurationID)),
-	).WHERE(
-		Asset.IsRoot.EQ(Bool(true)),
+		RootAsset,
 	).Query(GetDB().db, &assets)
 	if err != nil {
 		return nil, fmt.Errorf("fetching root assets: %v", err)
 	}
 
-	appAssets := make([]appmodel.Asset, 0, len(assets))
+	appAssets := make([]appmodel.RootAsset, 0, len(assets))
 	for _, asset := range assets {
-		config, err := toAppConfig(asset.Configuration)
-		if err != nil {
-			return nil, fmt.Errorf("translating configuration: %v", err)
-		}
-		appAssets = append(appAssets, toAppAsset(asset.Asset, config))
+		appAssets = append(appAssets, appmodel.RootAsset{
+			ID:      asset.ID,
+			AssetID: asset.AssetID,
+		})
 	}
 	return appAssets, nil
+}
+
+func GetRootAssetId(ctx context.Context, projectID, gai string) (*int32, error) {
+	var dest struct {
+		ID int32
+	}
+	stmt := RootAsset.SELECT(
+		RootAsset.ID,
+	).WHERE(
+		RootAsset.Gai.EQ(String(gai)).AND(
+			RootAsset.ProjectID.EQ(String(projectID)),
+		),
+	)
+	err := stmt.QueryContext(ctx, GetDB().db, &dest)
+	if errors.Is(err, qrm.ErrNoRows) {
+		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, fmt.Errorf("getting root asset ID: %v", err)
+	}
+
+	return &dest.ID, nil
+}
+
+func RootAssetAlreadyCreated() (bool, error) {
+	var dest struct {
+		ID int32
+	}
+	stmt := RootAsset.SELECT(
+		RootAsset.ID,
+	)
+	err := stmt.QueryContext(context.Background(), GetDB().db, &dest)
+	if errors.Is(err, qrm.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("getting root asset: %v", err)
+	}
+
+	return true, nil
 }

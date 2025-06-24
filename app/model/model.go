@@ -16,28 +16,26 @@
 package appmodel
 
 type Configuration struct {
-	Id                int64
-	ApiAccessChangeMe string
-	RefreshInterval   int32
-	RequestTimeout    int32
-	AssetFilter       [][]FilterRule
-	Enable            bool
-	Active            bool
-	ProjectIDs        []string
-	UserId            string
-}
-
-type FilterRule struct {
-	Parameter string
-	Regex     string
+	Id              int64
+	ApiKey          string
+	RefreshInterval int32
+	RequestTimeout  int32
+	Enable          bool
+	Active          bool
+	ProjectIDs      []string
+	UserId          string
 }
 
 type Asset struct {
-	ID            int64
-	Config        Configuration
-	ProjectID     string
-	GlobalAssetID string
-	ProviderID    string
-	AssetID       int32
-	IsRoot        bool
+	ID           int64
+	ProjectID    string
+	LocationName string
+	Lat          float64
+	Lon          float64
+	AssetID      int32
+}
+
+type RootAsset struct {
+	ID      int64
+	AssetID int32
 }

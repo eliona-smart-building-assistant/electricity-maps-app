@@ -23,6 +23,7 @@ import (
 	dbhelper "electricity-maps/db/helper"
 	"electricity-maps/eliona"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"sync"
@@ -31,6 +32,7 @@ import (
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-eliona/app"
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
+	"github.com/eliona-smart-building-assistant/go-eliona/client"
 	"github.com/eliona-smart-building-assistant/go-eliona/dashboard"
 	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
@@ -62,9 +64,34 @@ func Initialize() {
 	// Init the app before the first run.
 	app.Init(conn, app.AppName(),
 		app.ExecSqlFile("db/init.sql"),
+		initAssetCategory(),
 		asset.InitAssetTypeFiles("resources/asset-types/*.json"),
 		dashboard.InitWidgetTypeFiles("resources/widget-types/*.json"),
 	)
+}
+
+func initAssetCategory() func(db.Connection) error {
+	return func(db.Connection) error {
+		_, _, err := client.NewClient().AssetTypesAPI.
+			PutAssetTypeCategory(client.AuthenticationContext()).
+			AssetTypeCategory(api.AssetTypeCategory{
+				Name: "electricity-maps-app-location",
+				Translation: *api.NewNullableTranslation(&api.Translation{
+					De: api.PtrString("Elektrizitätskarten Standort"),
+					En: api.PtrString("Electricity Maps Location"),
+				}),
+				Properties: []api.AssetTypeCategoryProperty{
+					{
+						Name: *api.PtrString("name"),
+						Translation: *api.NewNullableTranslation(&api.Translation{
+							En: api.PtrString("Name"),
+							De: api.PtrString("Name"),
+						}),
+					},
+				},
+			}).Execute()
+		return err
+	}
 }
 
 var (
@@ -75,74 +102,72 @@ var (
 )
 
 func CollectData() {
-	configs, err := dbhelper.GetConfigs(context.Background())
-	if err != nil {
-		log.Fatal("dbhelper", "Couldn't read configs from DB: %v", err)
-		changeAppStatus(statusFatal)
-		return
-	}
-	if len(configs) == 0 {
+	config, err := dbhelper.GetConfig(context.Background())
+	if errors.Is(err, dbhelper.ErrNotFound) {
 		once.Do(func() {
 			log.Info("dbhelper", "No configs in DB. Please configure the app in Eliona.")
 		})
 		return
 	}
-
-	for _, config := range configs {
-		if !config.Enable {
-			if config.Active {
-				dbhelper.SetConfigActiveState(context.Background(), config.Id, false)
-			}
-			continue
-		}
-
-		if !config.Active {
-			dbhelper.SetConfigActiveState(context.Background(), config.Id, true)
-			log.Info("dbhelper", "Collecting initialized with Configuration %d:\n"+
-				"Enable: %t\n"+
-				"Refresh Interval: %d\n"+
-				"Request Timeout: %d\n"+
-				"Project IDs: %v\n",
-				config.Id,
-				config.Enable,
-				config.RefreshInterval,
-				config.RequestTimeout,
-				config.ProjectIDs)
-		}
-
-		// Check for changes in this specific config
-		if isConfigChanged(config) {
-			select {
-			case configChangeChan <- struct{}{}: // Non-blocking send
-				log.Debug("app", "Config changed signal sent")
-			default:
-				log.Debug("app", "Config change signal not sent, channel full")
-			}
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		common.RunOnceWithParam(func(config appmodel.Configuration) {
-			log.Info("main", "Collecting %d started.", config.Id)
-			if err := collectResources(ctx, &config); err != nil {
-				changeAppStatus(statusError)
-				cancel() // Cancel the context to stop the long-running processes
-				return   // Error is handled in the method itself.
-			}
-			log.Info("main", "Collecting %d finished.", config.Id)
-			changeAppStatus(statusOK)
-
-			// Wait for the next interval or a config change
-			select {
-			case <-time.After(time.Second * time.Duration(config.RefreshInterval)):
-				// Continue with the next iteration
-				return
-			case <-configChangeChan:
-				// Config changed, restart the process
-				cancel() // Cancel the context to stop the long-running process
-				return
-			}
-		}, config, config.Id)
+	if err != nil {
+		log.Fatal("dbhelper", "Couldn't read configs from DB: %v", err)
+		changeAppStatus(statusFatal)
+		return
 	}
+
+	if !config.Enable {
+		if config.Active {
+			dbhelper.SetConfigActiveState(context.Background(), false)
+		}
+		return
+	}
+
+	if !config.Active {
+		dbhelper.SetConfigActiveState(context.Background(), true)
+		log.Info("dbhelper", "Collecting initialized with Configuration %d:\n"+
+			"Enable: %t\n"+
+			"Refresh Interval: %d\n"+
+			"Request Timeout: %d\n"+
+			"Project IDs: %v\n",
+			config.Id,
+			config.Enable,
+			config.RefreshInterval,
+			config.RequestTimeout,
+			config.ProjectIDs)
+	}
+
+	// Check for changes in this specific config
+	if isConfigChanged(config) {
+		select {
+		case configChangeChan <- struct{}{}: // Non-blocking send
+			log.Debug("app", "Config changed signal sent")
+		default:
+			log.Debug("app", "Config change signal not sent, channel full")
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	common.RunOnceWithParam(func(config appmodel.Configuration) {
+		log.Info("main", "Collecting %d started.", config.Id)
+		if err := collectResources(ctx, &config); err != nil {
+			changeAppStatus(statusError)
+			cancel() // Cancel the context to stop the long-running processes
+			return   // Error is handled in the method itself.
+		}
+		log.Info("main", "Collecting %d finished.", config.Id)
+		changeAppStatus(statusOK)
+
+		// Wait for the next interval or a config change
+		select {
+		case <-time.After(time.Second * time.Duration(config.RefreshInterval)):
+			// Continue with the next iteration
+			return
+		case <-configChangeChan:
+			// Config changed, restart the process
+			cancel() // Cancel the context to stop the long-running process
+			return
+		}
+	}, config, config.Id)
 }
 
 func isConfigChanged(newConfig appmodel.Configuration) bool {
@@ -165,6 +190,15 @@ func isConfigChanged(newConfig appmodel.Configuration) bool {
 	return false
 }
 
+func triggerReload() {
+	select {
+	case configChangeChan <- struct{}{}:
+		log.Debug("app", "Triggered reload via config change signal")
+	default:
+		log.Debug("app", "Could not trigger reload, channel full")
+	}
+}
+
 func collectResources(ctx context.Context, config *appmodel.Configuration) error {
 	// Do the magic here
 	return nil
@@ -172,35 +206,144 @@ func collectResources(ctx context.Context, config *appmodel.Configuration) error
 
 // ListenForOutputChanges listens to output attribute changes from Eliona. Delete if not needed.
 func ListenForOutputChanges() {
-	for { // We want to restart listening in case something breaks.
-		outputs, err := eliona.ListenForOutputChanges()
+	for {
+		outputs, err := eliona.ListenForPropertyChanges()
 		if err != nil {
 			log.Error("eliona", "listening for output changes: %v", err)
 			changeAppStatus(statusError)
 			return
 		}
+
 		for output := range outputs {
 			if cr := output.ClientReference.Get(); cr != nil && *cr == eliona.ClientReference {
-				// Just an echoed value this app sent.
 				continue
 			}
+
 			asset, err := dbhelper.GetAssetById(output.AssetId)
 			if errors.Is(err, dbhelper.ErrNotFound) {
-				log.Debug("app", "received data update for other apps asset %v", output.AssetId)
+				handleNewAsset(output)
+				triggerReload()
 				continue
 			} else if err != nil {
 				log.Error("dbhelper", "getting asset by assetID %v: %v", output.AssetId, err)
 				changeAppStatus(statusError)
 				return
 			}
-			if err := outputData(asset, output.Data); err != nil {
-				log.Error("dbhelper", "outputting data (%v) for config %v and assetId %v: %v", output.Data, asset.Config.Id, asset.AssetID, err)
-				changeAppStatus(statusError)
-				return
-			}
+
+			handleExistingAsset(output, asset)
+			triggerReload()
 		}
-		time.Sleep(time.Second * 5) // Give the server a little break.
+
+		time.Sleep(time.Second * 5)
 	}
+}
+
+func handleNewAsset(output api.Data) {
+	log.Debug("app", "received data update for new asset %v: %+v", output.AssetId, output)
+
+	elionaAsset, err := eliona.GetAsset(output.AssetId)
+	if err != nil {
+		log.Error("eliona", "getting asset ID %v: %v", output.AssetId, err)
+		return
+	}
+
+	if elionaAsset.AssetType != "weather_app_weather" {
+		log.Debug("eliona", "this asset is not ours")
+		return
+	}
+
+	locationName, ok := getLocationName(output.Data)
+	if !ok {
+		return
+	}
+
+	config, err := dbhelper.GetConfig(context.Background())
+	if err != nil {
+		log.Error("dbhelper", "getting config: %v", err)
+		changeAppStatus(statusError)
+		return
+	}
+
+	location, err := broker.Locate(config, locationName)
+	if err != nil {
+		log.Warn("app", "trying to locate %s: %v", locationName, err)
+		return
+	}
+
+	locationNameFormatted := formatLocationName(location)
+
+	if err := eliona.UpsertData(elionaAsset.GetId(), map[string]any{"name": locationNameFormatted}, time.Now(), api.SUBTYPE_PROPERTY); err != nil {
+		log.Error("eliona", "updating asset %v location name: %v", elionaAsset.GetId(), err)
+		return
+	}
+
+	if err := dbhelper.InsertAsset(client.AuthenticationContext(), appmodel.Asset{
+		ProjectID:    elionaAsset.ProjectId,
+		AssetID:      elionaAsset.GetId(),
+		LocationName: locationNameFormatted,
+		Lat:          location.Lat,
+		Lon:          location.Lon,
+	}); err != nil {
+		log.Error("dbhelper", "inserting asset: %v", err)
+	}
+}
+
+func handleExistingAsset(output api.Data, asset appmodel.Asset) {
+	log.Debug("app", "received data update for known asset %v: %+v", output.AssetId, output)
+
+	locationName, ok := getLocationName(output.Data)
+	if !ok {
+		return
+	}
+
+	config, err := dbhelper.GetConfig(context.Background())
+	if err != nil {
+		log.Error("dbhelper", "getting config: %v", err)
+		changeAppStatus(statusError)
+		return
+	}
+
+	location, err := broker.Locate(config, locationName)
+	if err != nil {
+		log.Warn("app", "trying to locate %s: %v", locationName, err)
+		return
+	}
+
+	locationNameFormatted := formatLocationName(location)
+
+	if err := eliona.UpsertData(asset.AssetID, map[string]any{"name": locationNameFormatted}, time.Now(), api.SUBTYPE_PROPERTY); err != nil {
+		log.Error("eliona", "updating asset %v location name: %v", asset.AssetID, err)
+		return
+	}
+
+	if err := dbhelper.UpdateAssetLocation(client.AuthenticationContext(), appmodel.Asset{
+		ID:           asset.ID,
+		LocationName: locationNameFormatted,
+		Lat:          location.Lat,
+		Lon:          location.Lon,
+	}); err != nil {
+		log.Error("dbhelper", "updating asset: %v", err)
+	}
+}
+
+func getLocationName(data map[string]interface{}) (string, bool) {
+	outputLocationName, ok := data["name"]
+	if !ok {
+		log.Warn("eliona", "received known asset type, but don't understand data: %+v", data)
+		return "", false
+	}
+
+	locationName, ok := outputLocationName.(string)
+	if !ok {
+		log.Warn("eliona", "received known asset type, but cannot convert location name to string: %+v", data)
+		return "", false
+	}
+
+	return locationName, true
+}
+
+func formatLocationName(location broker.Geolocation) string {
+	return fmt.Sprintf("%s, %s, %s", location.Name, location.State, location.Country)
 }
 
 // outputData implements passing output data to broker. Remove if not needed.
