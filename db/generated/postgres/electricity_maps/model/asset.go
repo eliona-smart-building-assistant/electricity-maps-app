@@ -8,8 +8,8 @@
 package model
 
 type Asset struct {
-	ID           int64 `sql:"primary_key"`
-	ProjectID    string
-	LocationName string
-	AssetID      int32
+	ID         int64 `sql:"primary_key"`
+	ProjectID  string
+	LocationID string
+	AssetID    int32
 }

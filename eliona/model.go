@@ -18,77 +18,10 @@ package eliona
 import (
 	"context"
 	appmodel "electricity-maps/app/model"
-	conf "electricity-maps/db/helper"
-	"fmt"
-
-	"github.com/eliona-smart-building-assistant/go-eliona/utils"
-	"github.com/eliona-smart-building-assistant/go-utils/common"
+	dbhelper "electricity-maps/db/helper"
 )
 
-// TODO: define the asset structure here
-
-type ExampleDevice struct {
-	ID   string `eliona:"id" subtype:"info"`
-	Name string `eliona:"name,filterable" subtype:"info"`
-
-	LocationalParentGAI string
-	FunctionalParentGAI string
-
-	Config *appmodel.Configuration
-}
-
-func (d *ExampleDevice) AdheresToFilter(filter [][]appmodel.FilterRule) (bool, error) {
-	f := appFilterToCommonFilter(filter)
-	fp, err := utils.StructToMap(d)
-	if err != nil {
-		return false, fmt.Errorf("converting struct to map: %v", err)
-	}
-	adheres, err := common.Filter(f, fp)
-	if err != nil {
-		return false, err
-	}
-	return adheres, nil
-}
-
-func (d *ExampleDevice) GetName() string {
-	return d.Name
-}
-
-func (d *ExampleDevice) GetDescription() string {
-	return ""
-}
-
-func (d *ExampleDevice) GetAssetType() string {
-	return "electricity_maps_device"
-}
-
-func (d *ExampleDevice) GetGAI() string {
-	return d.GetAssetType() + "_" + d.ID
-}
-
-func (d *ExampleDevice) GetAssetID(projectID string) (*int32, error) {
-	return conf.GetAssetId(context.Background(), *d.Config, projectID, d.GetGAI())
-}
-
-func (d *ExampleDevice) SetAssetID(assetID int32, projectID string) error {
-	if err := conf.InsertAssetWithDetails(context.Background(), *d.Config, projectID, d.GetGAI(), assetID, d.ID, false); err != nil {
-		return fmt.Errorf("inserting asset to config db: %v", err)
-	}
-	return nil
-}
-
-func (d *ExampleDevice) GetLocationalParentGAI() string {
-	return d.LocationalParentGAI
-}
-
-func (d *ExampleDevice) GetFunctionalParentGAI() string {
-	return d.FunctionalParentGAI
-}
-
 type Root struct {
-	locationsMap map[string]ExampleDevice
-	devicesSlice []ExampleDevice
-
 	LocationalParentGAI string
 	FunctionalParentGAI string
 
@@ -96,15 +29,15 @@ type Root struct {
 }
 
 func (r *Root) GetName() string {
-	return "electricity_maps"
+	return "weather_app"
 }
 
 func (r *Root) GetDescription() string {
-	return "Root asset for Electricity Maps devices"
+	return "Root asset for Weather App"
 }
 
 func (r *Root) GetAssetType() string {
-	return "electricity_maps_root"
+	return "weather_app_root"
 }
 
 func (r *Root) GetGAI() string {
@@ -112,14 +45,11 @@ func (r *Root) GetGAI() string {
 }
 
 func (r *Root) GetAssetID(projectID string) (*int32, error) {
-	return conf.GetAssetId(context.Background(), *r.Config, projectID, r.GetGAI())
+	return dbhelper.GetRootAssetId(context.Background(), projectID, r.GetGAI())
 }
 
 func (r *Root) SetAssetID(assetID int32, projectID string) error {
-	if err := conf.InsertAssetWithDetails(context.Background(), *r.Config, projectID, r.GetGAI(), assetID, "", true); err != nil {
-		return fmt.Errorf("inserting asset to config db: %v", err)
-	}
-	return nil
+	return dbhelper.UpsertRootAsset(assetID, projectID, r.GetGAI())
 }
 
 func (r *Root) GetLocationalParentGAI() string {
@@ -128,20 +58,4 @@ func (r *Root) GetLocationalParentGAI() string {
 
 func (r *Root) GetFunctionalParentGAI() string {
 	return r.FunctionalParentGAI
-}
-
-//
-
-func appFilterToCommonFilter(input [][]appmodel.FilterRule) [][]common.FilterRule {
-	result := make([][]common.FilterRule, len(input))
-	for i := 0; i < len(input); i++ {
-		result[i] = make([]common.FilterRule, len(input[i]))
-		for j := 0; j < len(input[i]); j++ {
-			result[i][j] = common.FilterRule{
-				Parameter: input[i][j].Parameter,
-				Regex:     input[i][j].Regex,
-			}
-		}
-	}
-	return result
 }

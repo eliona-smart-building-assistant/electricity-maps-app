@@ -17,10 +17,10 @@ type assetTable struct {
 	postgres.Table
 
 	// Columns
-	ID           postgres.ColumnInteger
-	ProjectID    postgres.ColumnString
-	LocationName postgres.ColumnString
-	AssetID      postgres.ColumnInteger
+	ID         postgres.ColumnInteger
+	ProjectID  postgres.ColumnString
+	LocationID postgres.ColumnString
+	AssetID    postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
 	MutableColumns postgres.ColumnList
@@ -62,23 +62,23 @@ func newAssetTable(schemaName, tableName, alias string) *AssetTable {
 
 func newAssetTableImpl(schemaName, tableName, alias string) assetTable {
 	var (
-		IDColumn           = postgres.IntegerColumn("id")
-		ProjectIDColumn    = postgres.StringColumn("project_id")
-		LocationNameColumn = postgres.StringColumn("location_name")
-		AssetIDColumn      = postgres.IntegerColumn("asset_id")
-		allColumns         = postgres.ColumnList{IDColumn, ProjectIDColumn, LocationNameColumn, AssetIDColumn}
-		mutableColumns     = postgres.ColumnList{ProjectIDColumn, LocationNameColumn, AssetIDColumn}
-		defaultColumns     = postgres.ColumnList{IDColumn}
+		IDColumn         = postgres.IntegerColumn("id")
+		ProjectIDColumn  = postgres.StringColumn("project_id")
+		LocationIDColumn = postgres.StringColumn("location_id")
+		AssetIDColumn    = postgres.IntegerColumn("asset_id")
+		allColumns       = postgres.ColumnList{IDColumn, ProjectIDColumn, LocationIDColumn, AssetIDColumn}
+		mutableColumns   = postgres.ColumnList{ProjectIDColumn, LocationIDColumn, AssetIDColumn}
+		defaultColumns   = postgres.ColumnList{IDColumn}
 	)
 
 	return assetTable{
 		Table: postgres.NewTable(schemaName, tableName, alias, allColumns...),
 
 		//Columns
-		ID:           IDColumn,
-		ProjectID:    ProjectIDColumn,
-		LocationName: LocationNameColumn,
-		AssetID:      AssetIDColumn,
+		ID:         IDColumn,
+		ProjectID:  ProjectIDColumn,
+		LocationID: LocationIDColumn,
+		AssetID:    AssetIDColumn,
 
 		AllColumns:     allColumns,
 		MutableColumns: mutableColumns,

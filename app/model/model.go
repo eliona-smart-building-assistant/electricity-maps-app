@@ -27,10 +27,10 @@ type Configuration struct {
 }
 
 type Asset struct {
-	ID           int64
-	ProjectID    string
-	LocationName string
-	AssetID      int32
+	ID         int64
+	ProjectID  string
+	LocationID string
+	AssetID    int32
 }
 
 type RootAsset struct {

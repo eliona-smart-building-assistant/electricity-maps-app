@@ -148,15 +148,11 @@ func InsertAsset(ctx context.Context, asset appmodel.Asset) error {
 	stmt := Asset.INSERT(
 		Asset.ProjectID,
 		Asset.AssetID,
-		Asset.LocationName,
-		Asset.Lat,
-		Asset.Lon,
+		Asset.LocationID,
 	).VALUES(
 		asset.ProjectID,
 		asset.AssetID,
-		asset.LocationName,
-		asset.Lat,
-		asset.Lon,
+		asset.LocationID,
 	).ON_CONFLICT(
 		Asset.AssetID,
 	).DO_NOTHING()
@@ -167,13 +163,9 @@ func InsertAsset(ctx context.Context, asset appmodel.Asset) error {
 
 func UpdateAssetLocation(ctx context.Context, asset appmodel.Asset) error {
 	stmt := Asset.UPDATE(
-		Asset.LocationName,
-		Asset.Lat,
-		Asset.Lon,
+		Asset.LocationID,
 	).SET(
-		asset.LocationName,
-		asset.Lat,
-		asset.Lon,
+		asset.LocationID,
 	).WHERE(
 		Asset.ID.EQ(Int(asset.ID)),
 	)
@@ -254,12 +246,10 @@ func toAppConfig(dbCfg model.Configuration) (appmodel.Configuration, error) {
 
 func toAppAsset(dbAsset model.Asset) appmodel.Asset {
 	return appmodel.Asset{
-		ID:           dbAsset.ID,
-		ProjectID:    dbAsset.ProjectID,
-		LocationName: dbAsset.LocationName,
-		Lat:          dbAsset.Lat,
-		Lon:          dbAsset.Lon,
-		AssetID:      dbAsset.AssetID,
+		ID:         dbAsset.ID,
+		ProjectID:  dbAsset.ProjectID,
+		LocationID: dbAsset.LocationID,
+		AssetID:    dbAsset.AssetID,
 	}
 }
 

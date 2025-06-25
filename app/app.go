@@ -201,8 +201,54 @@ func triggerReload() {
 }
 
 func collectResources(ctx context.Context, config *appmodel.Configuration) error {
-	// Do the magic here
+	if err := createRootAsset(config); err != nil {
+		log.Error("app", "creating root asset for config %v in Eliona: %v", config.Id, err)
+		return err
+	}
+
+	assets, err := dbhelper.GetAssets(ctx)
+	if err != nil {
+		log.Error("dbhelper", "getting assets: %v", err)
+		return err
+	}
+	for _, asset := range assets {
+		electricityInfo, err := broker.GetZoneData(asset.LocationID, config.ApiKey)
+		if err != nil {
+			log.Error("broker", "getting electricityInfo data: %v", err)
+			return err
+		}
+		electricityInfoMap := electricityInfoToMap(electricityInfo)
+		if err := eliona.UpsertData(asset.AssetID, electricityInfoMap, time.Now(), api.SUBTYPE_INPUT); err != nil {
+			log.Error("eliona", "upserting data for asset %v: %v", asset.AssetID, err)
+			return err
+		}
+	}
+
 	return nil
+}
+
+func createRootAsset(config *appmodel.Configuration) error {
+	if hasRoot, err := dbhelper.RootAssetAlreadyCreated(); err != nil {
+		return fmt.Errorf("finding whether config already has root asset: %v", err)
+	} else if hasRoot {
+		return nil
+	}
+	var assets []asset.AssetWithParentReferences
+	root := eliona.Root{Config: config}
+	assets = append(assets, &root)
+	if err := eliona.CreateAssets(*config, assets); err != nil {
+		return fmt.Errorf("creating assets: %v", err)
+	}
+	return nil
+}
+
+func electricityInfoToMap(info broker.ZoneData) map[string]interface{} {
+	attrMap := make(map[string]interface{})
+	attrMap["name"] = info.Zone
+	attrMap["carbon_intensity"] = info.CarbonIntensity
+	attrMap["renewable_percentage"] = info.RenewablePercentage
+	attrMap["fossil_free_percentage"] = info.FossilFreePercentage
+	return attrMap
 }
 
 // ListenForOutputChanges listens to output attribute changes from Eliona. Delete if not needed.
@@ -248,7 +294,7 @@ func handleNewAsset(output api.Data) {
 		return
 	}
 
-	if elionaAsset.AssetType != "weather_app_weather" {
+	if elionaAsset.AssetType != "electricity_maps_app_location" {
 		log.Debug("eliona", "this asset is not ours")
 		return
 	}
@@ -279,9 +325,9 @@ func handleNewAsset(output api.Data) {
 	}
 
 	if err := dbhelper.InsertAsset(client.AuthenticationContext(), appmodel.Asset{
-		ProjectID:    elionaAsset.ProjectId,
-		AssetID:      elionaAsset.GetId(),
-		LocationName: locationNameFormatted,
+		ProjectID:  elionaAsset.ProjectId,
+		AssetID:    elionaAsset.GetId(),
+		LocationID: location.Code,
 	}); err != nil {
 		log.Error("dbhelper", "inserting asset: %v", err)
 	}
@@ -316,8 +362,8 @@ func handleExistingAsset(output api.Data, asset appmodel.Asset) {
 	}
 
 	if err := dbhelper.UpdateAssetLocation(client.AuthenticationContext(), appmodel.Asset{
-		ID:           asset.ID,
-		LocationName: locationNameFormatted,
+		ID:         asset.ID,
+		LocationID: location.Code,
 	}); err != nil {
 		log.Error("dbhelper", "updating asset: %v", err)
 	}

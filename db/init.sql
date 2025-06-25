@@ -32,7 +32,7 @@ create table if not exists electricity_maps.asset
 (
 	id               bigserial        primary key,
 	project_id       text             not null,
-	location_name    text             not null,
+	location_id      text             not null,
 	asset_id         integer          not null unique
 );
 
