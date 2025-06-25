@@ -29,6 +29,7 @@ require (
 	github.com/jackc/pgtype v1.14.4 // indirect
 	github.com/jackc/pgx/v4 v4.18.3 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
+	github.com/lithammer/fuzzysearch v1.1.8
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.9.2 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect

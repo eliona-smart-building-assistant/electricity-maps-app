@@ -20,6 +20,7 @@ import (
 	apiserver "electricity-maps/api/generated"
 	apiservices "electricity-maps/api/services"
 	appmodel "electricity-maps/app/model"
+	"electricity-maps/broker"
 	dbhelper "electricity-maps/db/helper"
 	"electricity-maps/eliona"
 	"errors"
@@ -281,8 +282,6 @@ func handleNewAsset(output api.Data) {
 		ProjectID:    elionaAsset.ProjectId,
 		AssetID:      elionaAsset.GetId(),
 		LocationName: locationNameFormatted,
-		Lat:          location.Lat,
-		Lon:          location.Lon,
 	}); err != nil {
 		log.Error("dbhelper", "inserting asset: %v", err)
 	}
@@ -319,8 +318,6 @@ func handleExistingAsset(output api.Data, asset appmodel.Asset) {
 	if err := dbhelper.UpdateAssetLocation(client.AuthenticationContext(), appmodel.Asset{
 		ID:           asset.ID,
 		LocationName: locationNameFormatted,
-		Lat:          location.Lat,
-		Lon:          location.Lon,
 	}); err != nil {
 		log.Error("dbhelper", "updating asset: %v", err)
 	}
@@ -342,8 +339,8 @@ func getLocationName(data map[string]interface{}) (string, bool) {
 	return locationName, true
 }
 
-func formatLocationName(location broker.Geolocation) string {
-	return fmt.Sprintf("%s, %s, %s", location.Name, location.State, location.Country)
+func formatLocationName(location broker.Zone) string {
+	return fmt.Sprintf("%s - %s", location.Code, location.ZoneName)
 }
 
 // outputData implements passing output data to broker. Remove if not needed.

@@ -7,9 +7,10 @@
 
 package model
 
-type Asset struct {
-	ID           int64 `sql:"primary_key"`
-	ProjectID    string
-	LocationName string
-	AssetID      int32
+type RootAsset struct {
+	ID              int32 `sql:"primary_key"`
+	ConfigurationID int32
+	ProjectID       string
+	Gai             string
+	AssetID         int32
 }

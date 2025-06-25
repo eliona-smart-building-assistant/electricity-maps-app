@@ -20,8 +20,6 @@ type assetTable struct {
 	ID           postgres.ColumnInteger
 	ProjectID    postgres.ColumnString
 	LocationName postgres.ColumnString
-	Lat          postgres.ColumnFloat
-	Lon          postgres.ColumnFloat
 	AssetID      postgres.ColumnInteger
 
 	AllColumns     postgres.ColumnList
@@ -67,11 +65,9 @@ func newAssetTableImpl(schemaName, tableName, alias string) assetTable {
 		IDColumn           = postgres.IntegerColumn("id")
 		ProjectIDColumn    = postgres.StringColumn("project_id")
 		LocationNameColumn = postgres.StringColumn("location_name")
-		LatColumn          = postgres.FloatColumn("lat")
-		LonColumn          = postgres.FloatColumn("lon")
 		AssetIDColumn      = postgres.IntegerColumn("asset_id")
-		allColumns         = postgres.ColumnList{IDColumn, ProjectIDColumn, LocationNameColumn, LatColumn, LonColumn, AssetIDColumn}
-		mutableColumns     = postgres.ColumnList{ProjectIDColumn, LocationNameColumn, LatColumn, LonColumn, AssetIDColumn}
+		allColumns         = postgres.ColumnList{IDColumn, ProjectIDColumn, LocationNameColumn, AssetIDColumn}
+		mutableColumns     = postgres.ColumnList{ProjectIDColumn, LocationNameColumn, AssetIDColumn}
 		defaultColumns     = postgres.ColumnList{IDColumn}
 	)
 
@@ -82,8 +78,6 @@ func newAssetTableImpl(schemaName, tableName, alias string) assetTable {
 		ID:           IDColumn,
 		ProjectID:    ProjectIDColumn,
 		LocationName: LocationNameColumn,
-		Lat:          LatColumn,
-		Lon:          LonColumn,
 		AssetID:      AssetIDColumn,
 
 		AllColumns:     allColumns,
