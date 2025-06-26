@@ -269,8 +269,10 @@ func UpsertRootAsset(assetID int32, projectID, gai string) error {
 		RootAsset.AssetID,
 	).DO_NOTHING()
 
-	_, err := stmt.ExecContext(context.Background(), GetDB().db)
-	return err
+	if _, err := stmt.ExecContext(context.Background(), GetDB().db); err != nil {
+		return fmt.Errorf("upserting root asset (%v, %v, %v): %v", assetID, projectID, gai, err)
+	}
+	return nil
 }
 
 func GetRootAssets() ([]appmodel.RootAsset, error) {
