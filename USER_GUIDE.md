@@ -1,74 +1,76 @@
 # Electricity Maps User Guide
 
-### Introduction
-
-> The Electricity Maps app provides integration and synchronization between Eliona and Electricity Maps services.
+## Introduction
+> The Electricity Maps app provides Eliona with real-time electricity grid data from Electricity Maps, including carbon intensity and renewable energy percentages for different geographic zones.
 
 ## Overview
-
-This guide provides instructions on configuring, installing, and using the Electricity Maps app to manage resources and synchronize data between Eliona and Electricity Maps services.
+This guide provides instructions on configuring, installing, and using the Electricity Maps app to monitor electricity grid composition and carbon intensity data.
 
 ## Installation
-
 Install the Electricity Maps app via the Eliona App Store.
 
 ## Configuration
 
-The Electricity Maps app requires configuration through Eliona’s settings interface. Below are the general steps and details needed to configure the app.
+### Registering with Electricity Maps
+1. Create an account at [Electricity Maps](https://www.electricitymaps.com/)
+2. Subscribe to the appropriate API plan (free tier available for basic usage in single region)
+3. Generate an API key in your account settings and save it for the Eliona configuration
 
-### Registering the app in Electricity Maps Service
+### Configure the Electricity Maps App
+Configurations can be created in Eliona under `Settings > Apps > Electricity Maps` which opens the app's [Generic Frontend](https://doc.eliona.io/collection/v/eliona-english/manuals/settings/apps). Use the config endpoint with the PUT method.
 
-Create credentials in [Electricity Maps Portal](https://portal.electricitymaps.com). You will need to choose subscription based on your requirements and configure the app with the API key obtained here (instructions below).
+Configuration requires the following data:
 
-### Configure the Electricity Maps app
-
-Configurations can be created in Eliona under `Settings > Apps > Electricity Maps` which opens the app's [Generic Frontend](https://doc.eliona.io/collection/v/eliona-english/manuals/settings/apps). Here you can use the appropriate endpoint with the POST method. Each configuration requires the following data:
-
-| Attribute         | Description                                                                        |
-|-------------------|------------------------------------------------------------------------------------|
-| `baseURL`         | URL of the Electricity Maps services.                                              |
-| `apiKey`          | API key obtained at [Electricity maps portal](https://portal.electricitymaps.com.) |
-| `enable`          | Flag to enable or disable this configuration.                                      |
-| `refreshInterval` | Interval in seconds for data synchronization.                                      |
-| `requestTimeout`  | API query timeout in seconds.                                                      |
-| `projectIDs`      | List of Eliona project IDs for data collection.                                    |
+| Attribute | Description | Required |
+|-----------|-------------|----------|
+| `apiKey` | Electricity Maps API key obtained in the previous step | Yes |
+| `enable` | Flag to enable or disable this configuration | Yes |
+| `refreshInterval` | Interval in seconds for data synchronization (minimum 300 recommended) | Yes |
+| `requestTimeout` | API query timeout in seconds | No (default: 120) |
+| `projectIDs` | List of Eliona project IDs for data collection | Yes |
 
 Example configuration JSON:
-
 ```json
 {
-  "baseURL": "http://service/v1",
-  "apiKey": "random-cl13nt-s3cr3t",
-  "filter": "",
+  "apiKey": "your-api-key-here",
   "enable": true,
-  "refreshInterval": 60,
+  "refreshInterval": 900,
   "requestTimeout": 120,
   "projectIDs": [
     "10"
   ]
 }
 ```
+## Asset Creation
+Once configured, the app creates an `Electricity Zone` asset type. You can create multiple assets of this type, each representing a geographic zone to monitor.
 
-## Continuous Asset Creation
+## Configuring Electricity Zone Locations
+1. Create a new asset of type `Electricity Zone`
+2. Click the edit button on the asset
+3. In the "more info" section, set the zone identifier (e.g., "CH" or "Switzerland" for Switzerland, "DE" or "Germany" for Germany) 
+4. Save the asset configuration
+5. Refresh the page to verify the app has correctly identified the zone
 
-Once configured, the app starts Continuous Asset Creation (CAC). Discovered resources are automatically created as assets in Eliona, and users are notified via Eliona’s notification system.
+The asset will then be populated with electricity grid data including:
 
-<mark>TODO: Describe what resources are created, the hierarchy and the data points.</mark>
+| Attribute | Description | Unit |
+|-----------|-------------|------|
+| carbon_intensity | Carbon intensity of electricity consumption | gCO₂eq/kWh |
+| renewable_percentage | Percentage of renewable energy in electricity consumption | % |
+| fossil_free_percentage | Percentage of fossil-free energy in electricity consumption | % |
 
-### Asset filtering
+## App Status Monitoring
+The app creates a root asset called "Electricity Maps Root" which provides information about the app's status:
 
-In case it's not desired to import all assets from Electricity Maps to Eliona, it's possible to write an asset filter that would include only matching assets. This app is able to filter the assets by: <mark>TODO</mark>. See [Asset Filter documentation](https://doc.eliona.io/collection/eliona-english/manuals/settings/apps/asset-filter) for instructions on writing asset filters.
+- Asset status: Active/Inactive indicates if the app is running
+- Status attribute: Shows the current operational status. If the app status is not "OK", it signifies that the app might not be functioning properly. If the error state persists, let us know by submitting a bug report.
 
-## Additional Features
+## Use Cases
+The Electricity Maps app enables:
 
-<mark>TODO: Describe all other features of the app.</mark>
-
-### Dashboard templates
-
-The app offers a predefined dashboard that clearly displays the most important information. You can create such a dashboard under `Dashboards > Copy Dashboard > From App > Electricity Maps`.
-
-### <mark>TODO: Other features</mark>
-
-## App status monitoring
-
-Along with asset creation, an asset called "Electricity Maps root" is also created. It's purpose is to inform users of the app status -- It signalizes whether the app is running (Asset status -> Active/Inactive) and it's status - the Status attribute. If the app status is not "OK", it signifies that the app might not be functioning properly. If the error state persists, let us know by submitting a bug report.
+- Real-time monitoring of grid carbon intensity
+- Tracking renewable energy penetration
+- Energy procurement optimization
+- ESG reporting and sustainability tracking
+- Demand response strategies based on grid composition
+- Carbon-aware load shifting
