@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -312,7 +313,16 @@ func handleNewAsset(output api.Data) {
 	}
 
 	location, err := broker.Locate(config, locationName)
-	if err != nil {
+	if errors.Is(err, broker.ErrNotFound) {
+		zones, _ := broker.ListAvailableZones(config.ApiKey)
+		msg := "Location not found. Available:"
+		for code, zone := range zones {
+			msg += fmt.Sprintf(" %s(%s),", zone.ZoneName, code)
+		}
+		msg = strings.TrimSuffix(msg, ",")
+		_ = eliona.UpsertData(elionaAsset.GetId(), map[string]any{"name": msg}, time.Now(), api.SUBTYPE_PROPERTY)
+		return
+	} else if err != nil {
 		log.Warn("app", "trying to locate %s: %v", locationName, err)
 		return
 	}
@@ -349,7 +359,16 @@ func handleExistingAsset(output api.Data, asset appmodel.Asset) {
 	}
 
 	location, err := broker.Locate(config, locationName)
-	if err != nil {
+	if errors.Is(err, broker.ErrNotFound) {
+		zones, _ := broker.ListAvailableZones(config.ApiKey)
+		msg := "Location not found. Available:"
+		for code, zone := range zones {
+			msg += fmt.Sprintf(" %s(%s),", zone.ZoneName, code)
+		}
+		msg = strings.TrimSuffix(msg, ",")
+		_ = eliona.UpsertData(asset.AssetID, map[string]any{"name": msg}, time.Now(), api.SUBTYPE_PROPERTY)
+		return
+	} else if err != nil {
 		log.Warn("app", "trying to locate %s: %v", locationName, err)
 		return
 	}

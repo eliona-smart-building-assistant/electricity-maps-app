@@ -129,6 +129,16 @@ func Locate(config appmodel.Configuration, name string) (Zone, error) {
 	return Zone{}, ErrNotFound
 }
 
+// ListAvailableZones returns all available zones from the Electricity Maps API
+func ListAvailableZones(apiKey string) (map[string]Zone, error) {
+	zones, err := getZones(apiKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get zones: %w", err)
+	}
+
+	return zones, nil
+}
+
 // PowerBreakdown represents the detailed power breakdown data
 type PowerBreakdown struct {
 	Nuclear          *float64 `json:"nuclear"`
