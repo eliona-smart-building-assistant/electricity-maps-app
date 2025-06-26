@@ -103,20 +103,20 @@ func Locate(config appmodel.Configuration, name string) (Zone, error) {
 		zone.Code = id
 		// Check ID
 		distance := fuzzy.RankMatchNormalizedFold(searchTerm, id)
-		if distance > 0 && distance < bestDistance {
+		if distance >= 0 && distance < bestDistance {
 			bestDistance = distance
 			bestMatch = zone
-			if bestDistance == 1 { // Perfect match
+			if bestDistance == 0 { // Perfect match
 				return bestMatch, nil
 			}
 		}
 
 		// Check ZoneName
 		distance = fuzzy.RankMatchNormalizedFold(searchTerm, zone.ZoneName)
-		if distance > 0 && distance < bestDistance {
+		if distance >= 0 && distance < bestDistance {
 			bestDistance = distance
 			bestMatch = zone
-			if bestDistance == 1 { // Perfect match
+			if bestDistance == 0 { // Perfect match
 				return bestMatch, nil
 			}
 		}
