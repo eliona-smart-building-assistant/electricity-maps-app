@@ -38,7 +38,7 @@ create table if not exists electricity_maps.asset
 
 create table if not exists electricity_maps.root_asset
 (
-	id               int primary key,
+	id               bigserial primary key,
 	configuration_id int not null unique references electricity_maps.configuration(id) ON DELETE CASCADE,
 	project_id       text      not null,
 	gai              text      not null,
