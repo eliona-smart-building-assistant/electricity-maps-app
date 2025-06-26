@@ -6,12 +6,11 @@
 			"subtype": "property",
 			"translation": {
 				"de": "Standort",
-				"en": "Location",
-				"fr": "Emplacement",
-				"it": "Posizione"
+				"en": "Location"
 			},
 			"isDigital": false,
-			"categoryName": "electricity-maps-app-location"
+			"categoryName": "electricity-maps-app-location",
+			"type": "property"
 		},
 		{
 			"name": "carbon_intensity",
@@ -23,9 +22,9 @@
 				"fr": "Intensité carbone",
 				"it": "Intensità di carbonio"
 			},
-			"type": "concentration",
 			"isDigital": false,
-			"unit": "gCO₂eq/kWh"
+			"unit": "gCO₂eq/kWh",
+			"type": "co2"
 		},
 		{
 			"name": "renewable_percentage",
@@ -37,9 +36,9 @@
 				"fr": "Pourcentage renouvelable",
 				"it": "Percentuale rinnovabile"
 			},
-			"type": "percentage",
 			"isDigital": false,
-			"unit": "%"
+			"unit": "%",
+			"type": "energy"
 		},
 		{
 			"name": "fossil_free_percentage",
@@ -51,9 +50,9 @@
 				"fr": "Pourcentage sans combustibles fossiles",
 				"it": "Percentuale senza combustibili fossili"
 			},
-			"type": "percentage",
 			"isDigital": false,
-			"unit": "%"
+			"unit": "%",
+			"type": "energy"
 		}
 	],
 	"custom": false,

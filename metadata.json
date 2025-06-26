@@ -12,7 +12,7 @@
   "dashboardTemplateNames": [
     "Electricity Maps"
   ],
-  "apiUrl": "v1",
+  "apiUrl": "http://localhost:3030/v1",
   "apiSpecificationPath": "/version/openapi.json",
   "documentationUrl": "https://doc.eliona.io/collection/eliona-english/eliona-apps/apps/electricity-maps",
   "useEnvironment": [
