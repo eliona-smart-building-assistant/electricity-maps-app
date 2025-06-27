@@ -51,7 +51,7 @@ Once configured, the app creates an `Electricity Zone` asset type. You can creat
 4. Save the asset configuration
 5. Refresh the page to verify the app has correctly identified the zone
 
-The asset will then be populated with electricity grid data including:
+The asset will then be populated with electricity grid data:
 
 | Attribute | Description | Unit |
 |-----------|-------------|------|
