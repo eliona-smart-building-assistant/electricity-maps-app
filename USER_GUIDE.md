@@ -3,6 +3,8 @@
 ## Introduction
 > The Electricity Maps app provides Eliona with real-time electricity grid data from Electricity Maps, including carbon intensity and renewable energy percentages for different geographic zones.
 
+![App schema](https://raw.githubusercontent.com/eliona-smart-building-assistant/electricity-maps-app/refs/heads/develop/schema.png "App schema")
+
 ## Overview
 This guide provides instructions on configuring, installing, and using the Electricity Maps app to monitor electricity grid composition and carbon intensity data.
 
